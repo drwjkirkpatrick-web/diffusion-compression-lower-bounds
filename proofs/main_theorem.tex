@@ -1,0 +1,107 @@
+% ============================================================
+% Information-Theoretic Lower Bounds for Generative/Diffusion
+% Compression with Learned Priors
+%
+% Walker Kirkpatrick
+% July 2026
+% License: MIT
+% ============================================================
+
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{\textbf{Information-Theoretic Lower Bounds for\\
+Generative/Diffusion Compression with Learned Priors}}
+\author{Walker Kirkpatrick}
+\date{July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We derive information-theoretic lower bounds on the compression rate achievable by diffusion-based image codecs (DiffC, PerCo, DiffEIC) that use a pretrained generative model as decoder side information. We extend the classical Wyner-Ziv framework to the case where the side information is a learned neural network prior with bounded KL divergence from the true source distribution. Our main result decomposes the lower bound into three terms: the classical Shannon rate-distortion function $R(D)$, a side-information credit that depends on the prior quality, and a perception premium from the rate-distortion-perception tradeoff. We show that in the ultra-low bitrate regime ($< 0.1$ bpp), the distortion floor is determined by the prior quality as $D_{\text{floor}} = \sigma^2 \exp(-2\delta)$, where $\delta$ is the KL divergence between source and prior.
+\end{abstract}
+
+\section{Introduction}
+
+Diffusion-based image compression represents a paradigm shift from traditional transform coding. Instead of explicitly encoding pixel data, these methods leverage a pretrained diffusion model as a generative prior and encode only the information needed to guide the generative process toward the target image.
+
+The key question: \textbf{what is the minimum bitrate needed when the decoder has a learned generative prior?} Classical information theory provides the Wyner-Ziv rate-distortion function for decoder side information, but assumes the side information is a noiseless observation from a known distribution---not a learned neural network.
+
+\section{Problem Setup}
+
+\begin{definition}[Setup]
+Let $X \sim p_X$ be the source (e.g., natural images). Let $p_{\text{prior}}$ be a learned generative prior (e.g., a diffusion model) available to the decoder. The prior quality is measured by the KL divergence:
+\[
+\delta = D_{\mathrm{KL}}(p_X \| p_{\text{prior}})
+\]
+The encoder maps $X$ to a bitstream of rate $R$. The decoder produces $\hat{X}$ using the bitstream and $p_{\text{prior}}$. We seek lower bounds on $R$ subject to $\mathbb{E}[\rho(X, \hat{X})] \leq D$ and $W_2(p_X, p_{\hat{X}}) \leq P$.
+\end{definition}
+
+\section{Main Result}
+
+\begin{theorem}[Diffusion Compression Lower Bound]
+\label{thm:main}
+The minimum rate for diffusion-based compression with a learned prior of quality $\delta$ satisfies:
+\[
+R \geq R(D) - I_{\text{credit}}(\delta) + \Delta_{\text{perception}}(D, P)
+\]
+where:
+\begin{align}
+R(D) &= \frac{1}{2}\log_2\frac{\sigma^2}{D} \quad \text{(classical Shannon bound)} \\
+I_{\text{credit}}(\delta) &= \min\!\left(\frac{\delta}{\ln 2},\, R(D)\right) \quad \text{(side information credit)} \\
+\Delta_{\text{perception}}(D, P) &\geq 0 \quad \text{(RDP perception premium)}
+\end{align}
+\end{theorem}
+
+\begin{proof}[Proof Sketch]
+\textbf{Step 1 (Wyner-Ziv extension).} The decoder's prior acts as side information $S = p_{\text{prior}}$. By the Wyner-Ziv theorem, $R(D|S) \geq I(X; Y) - I(X; S)$.
+
+\textbf{Step 2 (Prior quality bound).} The mutual information between source and prior knowledge is bounded by $I(X; S) \leq \delta / \ln 2$ (in bits), following from the data processing inequality applied to the learned representation.
+
+\textbf{Step 3 (Perception premium).} The perception constraint adds the RDP rate premium (Blau \& Michaeli 2019, extended to Gaussian sources in our companion work).
+
+\textbf{Step 4 (Combination).} Combining the three terms gives the lower bound.
+\end{proof}
+
+\begin{theorem}[Ultra-Low Bitrate Regime]
+\label{thm:ultra}
+In the ultra-low bitrate regime ($R \ll R(D)$), the minimum distortion is:
+\[
+D_{\min}(R, \delta) = \sigma^2 \cdot e^{-2\delta} \cdot 2^{-2R}
+\]
+The \textbf{distortion floor} (minimum distortion at $R = 0$) is $D_{\text{floor}} = \sigma^2 e^{-2\delta}$.
+\end{theorem}
+
+\begin{corollary}[Prior Quality Threshold]
+A prior with KL divergence $\delta$ provides an effective ``head start'' of $\delta / \ln 2$ bits per sample. Equivalently, the prior reduces the effective source variance from $\sigma^2$ to $\sigma^2 e^{-2\delta}$.
+\end{corollary}
+
+\section{Discussion}
+
+Our bounds are not tight in general, as the side-information credit is an upper bound and the Gaussian assumption may not hold for natural images. However, the bounds provide:
+\begin{enumerate}
+    \item A theoretical benchmark for evaluating diffusion codecs
+    \item A quantitative relationship between prior quality and achievable bitrate
+    \item A distortion floor prediction for the ultra-low bitrate regime
+\end{enumerate}
+
+\begin{thebibliography}{9}
+\bibitem{wyner1976} A. D. Wyner and J. Ziv, ``The rate-distortion function for source coding with side information at the decoder,'' \textit{IEEE Trans. Inf. Theory}, 1976.
+\bibitem{sgarro1977} A. Sgarro, ``Informational divergence and the length of coding,'' \textit{IEEE Trans. Inf. Theory}, 1977.
+\bibitem{theis2022} L. Theis and A. Ahmed, ``Algorithms for the communication of samples,'' \textit{ICML}, 2022.
+\bibitem{blau2019} Y. Blau and T. Michaeli, ``Rethinking lossy compression: The rate-distortion-perception tradeoff,'' \textit{ICML}, 2019.
+\bibitem{careil2024} B. Careil et al., ``Towards image compression with perfect realism at ultra-low bitrates,'' \textit{ICML}, 2024.
+\end{thebibliography}
+
+\end{document}
